@@ -72,6 +72,8 @@ public:
 
 private:
     QueueHandle_t queue_;
+    uint8_t* queueStorage_;
+    StaticQueue_t queueControl_;
     SemaphoreHandle_t stateMutex_;
     int16_t** frames_;
     bool* frameUsed_;
