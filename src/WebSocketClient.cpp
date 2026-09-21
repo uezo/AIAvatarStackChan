@@ -416,14 +416,19 @@ bool WebSocketClient::sendInvoke(const char* text) {
 bool WebSocketClient::sendInvokeWithImage(const char* text, const char* imageDataUrl) {
     if (!connected_) return false;
 
-    size_t textLen = text ? strlen(text) : 0;
-    size_t urlLen = imageDataUrl ? strlen(imageDataUrl) : 0;
-    size_t bufSize = textLen + urlLen + 352;
-    char channelField[64] = "";
-    if (channel_[0]) {
-        snprintf(channelField, sizeof(channelField), "\"channel\":\"%s\",", channel_);
-    }
+    JsonDocument doc;
+    doc["type"] = "invoke";
+    doc["session_id"] = sessionId_;
+    doc["user_id"] = userId_;
+    if (channel_[0]) doc["channel"] = channel_;
+    doc["text"] = text ? text : "";
+    // Borrow the image buffer for this call instead of duplicating it in the document.
+    doc["files"][0]["url"] = JsonString(imageDataUrl ? imageDataUrl : "", true);
+    doc["allow_merge"] = false;
+    doc["wait_in_queue"] = true;
+    if (doc.overflowed()) return false;
 
+    size_t bufSize = measureJson(doc) + 1;
     char* buf = static_cast<char*>(ps_malloc(bufSize));
     if (!buf) buf = static_cast<char*>(malloc(bufSize));
     if (!buf) {
@@ -431,24 +436,15 @@ bool WebSocketClient::sendInvokeWithImage(const char* text, const char* imageDat
         return false;
     }
 
-    int written = snprintf(buf, bufSize,
-                           "{\"type\":\"invoke\",\"session_id\":\"%s\","
-                           "\"user_id\":\"%s\","
-                           "%s"
-                           "\"text\":\"%s\","
-                           "\"files\":[{\"url\":\"%s\"}],"
-                           "\"allow_merge\":false,"
-                           "\"wait_in_queue\":true}",
-                           sessionId_, userId_, channelField, text ? text : "",
-                           imageDataUrl ? imageDataUrl : "");
-    if (written <= 0 || static_cast<size_t>(written) >= bufSize) {
+    size_t written = serializeJson(doc, buf, bufSize);
+    if (written == 0 || written >= bufSize) {
         free(buf);
         return false;
     }
 
-    bool ok = ws_.sendTXT(buf, static_cast<size_t>(written));
+    bool ok = ws_.sendTXT(buf, written);
     free(buf);
-    Serial.printf("[WS] invoke image bytes=%d ok=%d\n", written, ok ? 1 : 0);
+    Serial.printf("[WS] invoke image bytes=%u ok=%d\n", static_cast<unsigned>(written), ok ? 1 : 0);
     return ok;
 }
 

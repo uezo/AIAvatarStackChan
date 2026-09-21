@@ -264,6 +264,13 @@ Use this when a local sensor, button, timer, or application event should make St
 
 Public invoke APIs:
 
+- `avatar.invokeText(const char* text)`: queues a text-only invoke request.
+- `avatar.invokeWithVision(const char* text = nullptr)`: queues camera capture, preview, and an image invoke. Omit `text` to use `vision_invoke_prompt`, just like a server `vision` request. Text is copied when queued.
+
+These return whether the request was queued, not whether it was sent. Vision accepts one pending request; it returns `false` if the camera is unavailable, a request is already queued, or the text exceeds 767 bytes. Capture and transmission run in the WebSocket task once connected.
+
+Lower-level send APIs:
+
 - `avatar.websocket().sendInvoke(const char* text)`: sends a text-only invoke request.
 - `avatar.websocket().sendInvokeWithImage(const char* text, const char* imageDataUrl)`: sends a text prompt with an image file URL or data URL.
 - `avatar.websocket().sendInvokeWithAudio(const int16_t* pcmData, size_t sampleCount)`: sends recorded PCM audio as an invoke request.
