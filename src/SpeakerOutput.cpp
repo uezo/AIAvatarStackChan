@@ -9,6 +9,7 @@ namespace aiavatar {
 
 SpeakerOutput::SpeakerOutput()
     : queue_(nullptr),
+      queueStorage_(nullptr),
       stateMutex_(nullptr),
       frames_(nullptr),
       frameUsed_(nullptr),
@@ -97,16 +98,34 @@ bool SpeakerOutput::begin(size_t queueDepth, size_t startThreshold) {
     }
 
     queueDepth_ = allocated;
-    queue_ = xQueueCreate(queueDepth_, sizeof(PlaybackEvent));
+    bool queueInPsram = false;
+    if (psramAvailable) {
+        size_t queueBytes = queueDepth_ * sizeof(PlaybackEvent);
+        queueStorage_ = static_cast<uint8_t*>(ps_malloc(queueBytes));
+        if (queueStorage_) {
+            queue_ = xQueueCreateStatic(queueDepth_, sizeof(PlaybackEvent),
+                                        queueStorage_, &queueControl_);
+            queueInPsram = queue_ != nullptr;
+            if (!queue_) {
+                free(queueStorage_);
+                queueStorage_ = nullptr;
+            }
+        }
+    }
+    if (!queue_) {
+        queue_ = xQueueCreate(queueDepth_, sizeof(PlaybackEvent));
+    }
     if (!queue_) {
         Serial.println("[Speaker] playback queue allocation failed");
         return false;
     }
 
-    Serial.printf("[Speaker] queue=%u events threshold=%u samples capacity=%.2fs storage=%s\n",
+    Serial.printf("[Speaker] queue=%u events threshold=%u samples capacity=%.2fs "
+                  "frames=%s queueStorage=%s\n",
                   queueDepth_, startThreshold_,
                   (queueDepth_ * kPlaybackChunkSamples) / 16000.0f,
-                  psramAvailable ? "psram" : "heap");
+                  psramAvailable ? "psram" : "heap",
+                  queueInPsram ? "psram" : "internal");
     return true;
 }
 
