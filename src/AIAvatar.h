@@ -46,6 +46,9 @@ public:
     void disconnectWebSocket();
     void switchWiFi(uint8_t networkIndex);
     bool invokeText(const char* text);
+    // Queue camera capture + invoke. nullptr uses config.visionInvokePrompt.
+    // Returns whether accepted, not whether capture or transmission succeeded.
+    bool invokeWithVision(const char* text = nullptr);
     void resetSleepTimer(const char* reason);
 
     WebSocketClient& websocket() { return ws_; }
@@ -117,7 +120,6 @@ private:
     volatile bool playbackActive_;
     volatile bool pushToTalkActive_;
     volatile bool pttSendPending_;
-    volatile bool visionRequestPending_;
     volatile bool wsStopPending_;
     bool stackChanHardwareEnabled_;
     bool wifiStarted_;
@@ -154,6 +156,7 @@ private:
     TaskHandle_t speakerTaskHandle_;
     TaskHandle_t wsTaskHandle_;
     QueueHandle_t invokeTextQueue_;
+    QueueHandle_t visionRequestQueue_;
 
     SpeechDetectedCallback speechDetectedCb_;
     TextCallback userStartCb_;

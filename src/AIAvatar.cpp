@@ -20,7 +20,6 @@ AIAvatar::AIAvatar()
       playbackActive_(false),
       pushToTalkActive_(false),
       pttSendPending_(false),
-      visionRequestPending_(false),
       wsStopPending_(false),
       stackChanHardwareEnabled_(false),
       wifiStarted_(false),
@@ -56,6 +55,7 @@ AIAvatar::AIAvatar()
       speakerTaskHandle_(nullptr),
       wsTaskHandle_(nullptr),
       invokeTextQueue_(nullptr),
+      visionRequestQueue_(nullptr),
       speechDetectedCb_(nullptr),
       userStartCb_(nullptr),
       userFinalCb_(nullptr),
@@ -90,6 +90,11 @@ bool AIAvatar::begin(const Config& config, const ResourceProvider& resources) {
     tzset();
     if (!visionPreviewMutex_) {
         visionPreviewMutex_ = xSemaphoreCreateMutex();
+    }
+    visionRequestQueue_ = xQueueCreate(1, sizeof(InvokeTextMessage));
+    if (!visionRequestQueue_) {
+        Serial.println("[AIAvatar] vision request queue init failed");
+        return false;
     }
 
     if (config_.fastStartup) {
@@ -751,8 +756,9 @@ void AIAvatar::handlePttSend() {
 }
 
 void AIAvatar::handleVisionRequest() {
-    if (!visionRequestPending_ || !ws_.isConnected()) return;
-    visionRequestPending_ = false;
+    if (!visionRequestQueue_ || !ws_.isConnected()) return;
+    InvokeTextMessage msg = {};
+    if (xQueueReceive(visionRequestQueue_, &msg, 0) != pdTRUE) return;
 
     if (!camera_.isReady()) {
         Serial.println("[Vision] skipped: camera is not ready");
@@ -794,7 +800,7 @@ void AIAvatar::handleVisionRequest() {
     }
     dataUrl[prefixLen + actualB64Len] = '\0';
 
-    bool ok = ws_.sendInvokeWithImage(config_.visionInvokePrompt, dataUrl);
+    bool ok = ws_.sendInvokeWithImage(msg.text, dataUrl);
     free(dataUrl);
     Serial.printf("[Vision] invoke %s\n", ok ? "sent" : "failed");
 }
@@ -802,6 +808,19 @@ void AIAvatar::handleVisionRequest() {
 bool AIAvatar::invokeText(const char* text) {
     resetSleepTimer("invoke text");
     return queueInvokeText(text);
+}
+
+bool AIAvatar::invokeWithVision(const char* text) {
+    resetSleepTimer("vision");
+    if (!visionRequestQueue_ || !camera_.isReady()) return false;
+
+    InvokeTextMessage msg = {};
+    if (strlcpy(msg.text, text ? text : config_.visionInvokePrompt,
+                sizeof(msg.text)) >= sizeof(msg.text)) return false;
+    if (xQueueSend(visionRequestQueue_, &msg, 0) != pdTRUE) return false;
+
+    leds_.startVisionFlash();
+    return true;
 }
 
 void AIAvatar::resetSleepTimer(const char* reason) {
@@ -1108,10 +1127,7 @@ void AIAvatar::onToolCallStatic(const char* toolName) {
 }
 
 void AIAvatar::onVisionStatic() {
-    if (!s_instance) return;
-    s_instance->resetSleepTimer("vision");
-    s_instance->leds_.startVisionFlash();
-    s_instance->visionRequestPending_ = true;
+    if (s_instance) s_instance->invokeWithVision();
 }
 
 void AIAvatar::onAcceptedStatic() {
