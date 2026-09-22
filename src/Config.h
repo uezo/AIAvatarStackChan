@@ -84,6 +84,7 @@ struct Config {
     uint32_t pttHoldThresholdMs;
     int16_t pitchHome;
     bool stackChanAutoAngleSync;
+    uint8_t nadeMinTouchIntensity;
     char nadeInvokePrompt[kInvokePromptMaxLen];
     char visionInvokePrompt[kInvokePromptMaxLen];
 

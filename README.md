@@ -195,6 +195,7 @@ Here are the default controls built into the firmware.
 - `ptt_hold_threshold_ms` (number): hold duration in ms required to start Push-to-Talk
 - `pitch_home` (number): StackChan pitch home angle
 - `stackchan_auto_angle_sync` (boolean): whether to synchronize StackChan posture from the physical servo position
+- `nade_min_touch_intensity` (integer): minimum head sensor intensity that triggers nade. Default: `2`; range: `1` to `3`
 - `nade_invoke_prompt` (string): prompt sent when StackChan touch/nade is detected
 - `vision_invoke_prompt` (string): prompt sent with camera images
 - `fast_startup` (boolean): whether to start the display, mic, and UI first, then defer Wi-Fi, WebSocket, speaker, and heavy image loading so the device becomes interactive sooner
