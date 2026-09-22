@@ -24,11 +24,14 @@ public:
     bool active() const { return active_; }
     void setAutoAngleSyncEnabled(bool enabled);
     bool autoAngleSyncEnabled() const { return autoAngleSyncEnabled_; }
+    void setNadeMinTouchIntensity(uint8_t intensity) { nadeMinTouchIntensity_ = intensity; }
 
 private:
     bool active_;
     bool autoAngleSyncEnabled_;
     uint32_t lastStackChanUpdateMs_;
+    uint8_t nadeMinTouchIntensity_ = 2;
+    uint8_t lastNadeRaw_ = 0xFF;
 };
 
 }  // namespace aiavatar

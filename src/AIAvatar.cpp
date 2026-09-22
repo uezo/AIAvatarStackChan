@@ -82,6 +82,7 @@ bool AIAvatar::begin(const Config& config, const ResourceProvider& resources) {
     s_instance = this;
     defaultResources_ = resources;
     config_ = config;
+    stackChanHardware_.setNadeMinTouchIntensity(config_.nadeMinTouchIntensity);
     volumeLevelIndex_ = nearestVolumeLevel(config_.speakerVolume);
     volume_ = config_.volumeLevels[volumeLevelIndex_];
     speaker_.setAutoNormalize(config_.audioNormalizeTargetPeak,

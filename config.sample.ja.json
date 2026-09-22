@@ -45,6 +45,7 @@
   "ptt_hold_threshold_ms": 200,
   "pitch_home": 200,
   "stackchan_auto_angle_sync": true,
+  "nade_min_touch_intensity": 2,
   "nade_invoke_prompt": "$ご主人さまに頭を優しく撫でられました。ごく短いフレーズでリアクションしてください。短時間で撫ですぎなときはちょっと怒ったり恥ずかしがったりしてください。怒ったり困ったりした時はfaceとしてangryやsorrowの使用も可能",
   "vision_invoke_prompt": "$応答に必要な視覚情報を提供します。単に見えたものの説明だけではなく、これまでの文脈の中でこの画像が見えたときに相応しい反応をしてください",
   "sleep_enabled": true,

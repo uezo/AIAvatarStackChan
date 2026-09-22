@@ -70,6 +70,7 @@ Config::Config()
       pttHoldThresholdMs(200),
       pitchHome(200),
       stackChanAutoAngleSync(true),
+      nadeMinTouchIntensity(2),
       fastStartup(false),
       debugLog(false) {
     wifiSsid[0] = '\0';
@@ -202,6 +203,10 @@ static bool applyJsonDocument(Config& config, JsonDocument& doc) {
     config.pttHoldThresholdMs = doc["ptt_hold_threshold_ms"] | config.pttHoldThresholdMs;
     config.pitchHome = doc["pitch_home"] | config.pitchHome;
     config.stackChanAutoAngleSync = doc["stackchan_auto_angle_sync"] | config.stackChanAutoAngleSync;
+    if (doc["nade_min_touch_intensity"].is<uint8_t>()) {
+        uint8_t intensity = doc["nade_min_touch_intensity"].as<uint8_t>();
+        if (intensity >= 1 && intensity <= 3) config.nadeMinTouchIntensity = intensity;
+    }
     strlcpy(config.nadeInvokePrompt, doc["nade_invoke_prompt"] | config.nadeInvokePrompt,
             sizeof(config.nadeInvokePrompt));
     strlcpy(config.visionInvokePrompt, doc["vision_invoke_prompt"] | config.visionInvokePrompt,

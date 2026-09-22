@@ -91,16 +91,17 @@ void StackChanHardware::moveMotion(int16_t yaw, int16_t pitch, uint16_t speed) {
 bool StackChanHardware::consumeNadeEvent() {
 #if AIAVATAR_HAS_M5STACKCHAN
     if (!active_) return false;
-    if (M5StackChan.TouchSensor.wasSwipedForward()) {
-        Serial.println("[StackChan] nade by swipe forward");
-        return true;
-    }
-    if (M5StackChan.TouchSensor.wasSwipedBackward()) {
-        Serial.println("[StackChan] nade by swipe backward");
-        return true;
-    }
-    if (M5StackChan.TouchSensor.wasClicked()) {
-        Serial.println("[StackChan] nade by click");
+    const auto& raw = M5StackChan.TouchSensor.getIntensities();
+    const uint8_t packedRaw = raw[0] | (raw[1] << 2) | (raw[2] << 4);
+    const bool rawChanged = packedRaw != lastNadeRaw_;
+    lastNadeRaw_ = packedRaw;
+    if (raw[0] >= nadeMinTouchIntensity_ || raw[1] >= nadeMinTouchIntensity_ ||
+        raw[2] >= nadeMinTouchIntensity_) {
+        if (rawChanged) {
+            Serial.printf("[StackChan] nade by touch raw=%u,%u,%u\n",
+                          static_cast<unsigned>(raw[0]), static_cast<unsigned>(raw[1]),
+                          static_cast<unsigned>(raw[2]));
+        }
         return true;
     }
 #endif
